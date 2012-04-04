@@ -1,3 +1,5 @@
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE StandaloneDeriving #-}
 module Foreign.ObjC.ObjCType where
 
 import Data.Int
@@ -109,3 +111,98 @@ instance ObjCType CChar where
 instance ObjCArg CChar
 instance ObjCRet CChar
 
+deriving instance ObjCType CSChar
+deriving instance ObjCArg  CSChar
+deriving instance ObjCRet  CSChar
+
+deriving instance ObjCType CUChar
+deriving instance ObjCArg  CUChar
+deriving instance ObjCRet  CUChar
+
+deriving instance ObjCType CShort
+deriving instance ObjCArg  CShort
+deriving instance ObjCRet  CShort
+
+deriving instance ObjCType CUShort
+deriving instance ObjCArg  CUShort
+deriving instance ObjCRet  CUShort
+
+deriving instance ObjCType CInt
+deriving instance ObjCArg  CInt
+deriving instance ObjCRet  CInt
+
+deriving instance ObjCType CUInt
+deriving instance ObjCArg  CUInt
+deriving instance ObjCRet  CUInt
+
+deriving instance ObjCType CLong
+deriving instance ObjCArg  CLong
+deriving instance ObjCRet  CLong
+
+deriving instance ObjCType CULong
+deriving instance ObjCArg  CULong
+deriving instance ObjCRet  CULong
+
+deriving instance ObjCType CPtrdiff
+deriving instance ObjCArg  CPtrdiff
+deriving instance ObjCRet  CPtrdiff
+
+deriving instance ObjCType CSize
+deriving instance ObjCArg  CSize
+deriving instance ObjCRet  CSize
+
+deriving instance ObjCType CWchar
+deriving instance ObjCArg  CWchar
+deriving instance ObjCRet  CWchar
+
+deriving instance ObjCType CSigAtomic
+deriving instance ObjCArg  CSigAtomic
+deriving instance ObjCRet  CSigAtomic
+
+deriving instance ObjCType CLLong
+deriving instance ObjCArg  CLLong
+deriving instance ObjCRet  CLLong
+
+deriving instance ObjCType CULLong
+deriving instance ObjCArg  CULLong
+deriving instance ObjCRet  CULLong
+
+deriving instance ObjCType CIntPtr
+deriving instance ObjCArg  CIntPtr
+deriving instance ObjCRet  CIntPtr
+
+deriving instance ObjCType CUIntPtr
+deriving instance ObjCArg  CUIntPtr
+deriving instance ObjCRet  CUIntPtr
+
+deriving instance ObjCType CIntMax
+deriving instance ObjCArg  CIntMax
+deriving instance ObjCRet  CIntMax
+
+deriving instance ObjCType CUIntMax
+deriving instance ObjCArg  CUIntMax
+deriving instance ObjCRet  CUIntMax
+
+deriving instance ObjCType CClock
+deriving instance ObjCArg  CClock
+deriving instance ObjCRet  CClock
+
+deriving instance ObjCType CTime
+deriving instance ObjCArg  CTime
+deriving instance ObjCRet  CTime
+
+deriving instance ObjCType CUSeconds
+deriving instance ObjCArg  CUSeconds
+deriving instance ObjCRet  CUSeconds
+
+deriving instance ObjCType CSUSeconds
+deriving instance ObjCArg  CSUSeconds
+deriving instance ObjCRet  CSUSeconds
+
+deriving instance ObjCType CFloat
+deriving instance ObjCArg  CFloat
+deriving instance ObjCRet  CFloat
+
+deriving instance ObjCType CDouble
+deriving instance ObjCArg  CDouble
+deriving instance ObjCRet  CDouble

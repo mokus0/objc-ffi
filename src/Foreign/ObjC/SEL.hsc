@@ -12,6 +12,7 @@ module Foreign.ObjC.SEL
 import Foreign.C.String
 import Foreign.LibFFI.Experimental
 import Foreign.Marshal
+import Foreign.ObjC.Exception
 import Foreign.ObjC.Object
 import Foreign.Ptr
 import Foreign.Storable
@@ -44,11 +45,11 @@ msgSendSuper :: Dynamic a => ObjCSuper -> SEL a -> a
 foreign import ccall objc_msg_lookup       :: Ptr ObjCObject -> SEL a -> IO (IMP a)
 foreign import ccall objc_msg_lookup_super :: Ptr ObjCSuper  -> SEL a -> IO (IMP a)
 
-msgSend obj sel = dynamic imp obj sel
+msgSend obj sel = callWithExceptions imp obj sel
     where
         IMP imp  = unsafePerformIO (objc_msg_lookup obj sel)
 
-msgSendSuper super sel = dynamic imp (receiver super) sel
+msgSendSuper super sel = callWithExceptions imp (receiver super) sel
     where
         IMP imp  = unsafePerformIO $
             with super $ \super ->
@@ -120,7 +121,7 @@ cifIsFp2ret _ = False
 --       methods of ObjCRet and statically determining the correct
 --       one to use.
 
-msgSend obj sel = importDynWithCIF theCIF dyn send obj sel
+msgSend obj sel = importDynWithCall (objc_ffi_call theCIF) dyn send obj sel
     where
         {-# NOINLINE theCIF #-}
         theCIF = cif
@@ -133,7 +134,7 @@ msgSend obj sel = importDynWithCIF theCIF dyn send obj sel
                     then objc_msgSend_fp2ret
                     else objc_msgSend
 
-msgSendSuper super sel = importDynWithCIF theCIF (superArg `consDyn` dyn) send super sel
+msgSendSuper super sel = importDynWithCall (objc_ffi_call  theCIF) (superArg `consDyn` dyn) send super sel
     where
         superArg :: OutArg (Ptr ObjCSuper) ObjCSuper
         superArg = outByRef (OutArg with)

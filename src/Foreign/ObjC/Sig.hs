@@ -1,6 +1,5 @@
 module Foreign.ObjC.Sig where
 
-import Data.List
 import Foreign.LibFFI.Experimental
 import Foreign.ObjC.ObjCType
 

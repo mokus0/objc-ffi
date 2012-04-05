@@ -6,10 +6,11 @@ import Data.Int
 import Data.Word
 import Foreign.C.Types
 import Foreign.LibFFI.Experimental
+import Foreign.ObjC.Object
 import Foreign.ObjC.SEL
 import Foreign.Ptr
 
-class FFIType t => ObjCType t where
+class ObjCType t where
     typeString :: p t -> String
     
     ptrTypeString :: p t -> String
@@ -38,10 +39,28 @@ instance ObjCType (FunPtr a) where
 instance ObjCArg (FunPtr a)
 instance ObjCRet (FunPtr a)
 
-instance ObjCType SEL where
+instance ObjCType ObjCObject where
+    typeString    _ = "{objc_object=#}"
+    ptrTypeString _ = "@"
+
+instance ObjCType ObjCClass where
+    typeString    _ = "{objc_class=}"
+    ptrTypeString _ = "#"
+
+instance ObjCType ObjCSuper where
+    typeString    _ = "{objc_super=@#}"
+instance ObjCArg ObjCSuper
+instance ObjCRet ObjCSuper
+
+instance ObjCType (SEL a) where
     typeString _ = ":"
-instance ObjCArg SEL
-instance ObjCRet SEL
+instance ObjCArg (SEL a)
+instance ObjCRet (SEL a)
+
+instance ObjCType (IMP a) where
+    typeString _ = "?"
+instance ObjCArg (IMP a)
+instance ObjCRet (IMP a)
 
 instance ObjCType Float where
     typeString _ = "f"

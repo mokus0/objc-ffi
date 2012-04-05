@@ -3,7 +3,7 @@ version:                0.1
 stability:              experimental
 
 cabal-version:          >= 1.2
-build-type:             Simple
+build-type:             Custom
 
 author:                 James Cook <mokus@deepbondi.net>
 maintainer:             James Cook <mokus@deepbondi.net>
@@ -16,9 +16,20 @@ description:            I'm too lame to describe my project
 
 Library
   hs-source-dirs:       src
+  ghc-options:          -fwarn-unused-imports -fwarn-unused-binds
+  
   exposed-modules:      Foreign.ObjC
                         Foreign.ObjC.ObjCType
+                        Foreign.ObjC.Object
                         Foreign.ObjC.SEL
                         Foreign.ObjC.Sig
+  
   build-depends:        base >= 3 && < 5,
                         libffi-experiments
+  
+  extra-libraries:      objc
+  
+  if os(darwin)
+    cpp-options:        -DMACOSX
+  else
+    cpp-options:        -DGNUSTEP

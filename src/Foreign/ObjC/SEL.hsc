@@ -44,19 +44,15 @@ msgSendSuper :: Dynamic a => ObjCSuper -> SEL a -> a
 foreign import ccall objc_msg_lookup       :: Ptr ObjCObject -> SEL a -> IO (IMP a)
 foreign import ccall objc_msg_lookup_super :: Ptr ObjCSuper  -> SEL a -> IO (IMP a)
 
-msgSend obj sel = send obj sel
+msgSend obj sel = dynamic imp obj sel
     where
         IMP imp  = unsafePerformIO (objc_msg_lookup obj sel)
-        {-# NOINLINE send #-}
-        send = unsafePerformIO (dynamic imp)
 
-msgSendSuper super sel = send (receiver super) sel
+msgSendSuper super sel = dynamic imp (receiver super) sel
     where
         IMP imp  = unsafePerformIO $
             with super $ \super ->
                 objc_msg_lookup_super super sel
-        {-# NOINLINE send #-}
-        send = unsafePerformIO (dynamic imp)
 
 #else
 
@@ -124,23 +120,20 @@ cifIsFp2ret _ = False
 --       methods of ObjCRet and statically determining the correct
 --       one to use.
 
-msgSend obj sel = send obj sel
+msgSend obj sel = importDynWithCIF theCIF dyn send obj sel
     where
         {-# NOINLINE theCIF #-}
         theCIF = cif
         
-        {-# NOINLINE send#-}
-        send = unsafePerformIO $ importDynWithCIF theCIF dyn $ 
-            if cifIsStret theCIF
-                then objc_msgSend_stret
-                else if cifIsFpret theCIF
-                    then objc_msgSend_fpret
-                    else if cifIsFp2ret theCIF
-                        then objc_msgSend_fp2ret
-                        else objc_msgSend
-                        
+        send = if cifIsStret theCIF
+            then objc_msgSend_stret
+            else if cifIsFpret theCIF
+                then objc_msgSend_fpret
+                else if cifIsFp2ret theCIF
+                    then objc_msgSend_fp2ret
+                    else objc_msgSend
 
-msgSendSuper super sel = send super sel
+msgSendSuper super sel = importDynWithCIF theCIF (superArg `consDyn` dyn) send super sel
     where
         superArg :: OutArg (Ptr ObjCSuper) ObjCSuper
         superArg = outByRef (OutArg with)
@@ -149,10 +142,8 @@ msgSendSuper super sel = send super sel
         theCIF = cif
         
         {-# NOINLINE send#-}
-        send = unsafePerformIO $ importDynWithCIF theCIF (superArg `consDyn` dyn) $ 
-            if cifIsStret theCIF
-                then objc_msgSendSuper_stret
-                else objc_msgSendSuper
-                        
+        send = if cifIsStret theCIF
+            then objc_msgSendSuper_stret
+            else objc_msgSendSuper
 
 #endif

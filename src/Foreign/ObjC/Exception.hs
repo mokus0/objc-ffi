@@ -19,8 +19,6 @@ instance Exception ObjCException
 
 foreign import ccall ffi_call_with_exceptions :: CIF a -> FunPtr a -> Ptr (SigReturn a) -> Ptr (Ptr ()) -> Ptr ObjCException -> IO CInt
 
-foreign export ccall freeStablePtr :: StablePtr a -> IO ()
-
 objc_ffi_call :: CIF a -> FunPtr a -> Ptr (SigReturn a) -> Ptr (Ptr ()) -> IO ()
 objc_ffi_call cif impl ret args = alloca $ \exc -> do
     mbExc <- ffi_call_with_exceptions cif impl ret args exc

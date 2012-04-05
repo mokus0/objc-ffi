@@ -1,12 +1,11 @@
 #import "HSException.h"
-#include "Foreign/ObjC/Exception_stub.h"
 
 static NSString *kHSExceptionString = @"HSException";
 
 @implementation HSException
 
-- (HSException *)   initWithReason: (NSString *) reason
-                         exception: (void     *) exc
+- (HSException *)   initWithReason: (NSString *)  reason
+                         exception: (HsStablePtr) exc
 {
     self = [super initWithName: kHSExceptionString
                         reason: reason
@@ -19,12 +18,12 @@ static NSString *kHSExceptionString = @"HSException";
     return self;
 }
 
-- (void *) hsException {
+- (HsStablePtr) hsException {
     return hs_exc;
 }
 
 - (void) dealloc {
-    freeStablePtr(hs_exc);
+    hs_free_stable_ptr(hs_exc);
     
     [super dealloc];
 }

@@ -1,12 +1,13 @@
 #import <Foundation/Foundation.h>
+#import <HsFFI.h>
 
 @interface HSException : NSException {
-    void *hs_exc;
+    HsStablePtr hs_exc;
 }
 
-- (HSException *)   initWithReason: (NSString *) reason
-                         exception: (void     *) exc;
+- (HSException *)   initWithReason: (NSString *)  reason
+                         exception: (HsStablePtr) exc;
 
-- (void *)      hsException;
+- (HsStablePtr)     hsException;
 
 @end

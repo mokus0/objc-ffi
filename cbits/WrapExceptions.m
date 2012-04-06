@@ -3,7 +3,7 @@
 
 // Returns a retained HSException
 HSException *newHSException(const char *reason, void * exc) {
-    return [[HSException alloc] initWithReason: [NSString stringWithCString: reason]
+    return [[HSException alloc] initWithReason: [NSString stringWithUTF8String: reason]
                                      exception: exc ];
 }
 

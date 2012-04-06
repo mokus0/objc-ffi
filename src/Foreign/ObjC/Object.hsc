@@ -13,7 +13,6 @@ import Foreign.Storable
 #include <objc/objc-api.h>
 #else
 #include <objc/objc-runtime.h>
-#include <objc/message.h>
 #endif
 
 -- struct objc_class (abstract as of ObjC 2)

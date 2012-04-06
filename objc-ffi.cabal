@@ -38,6 +38,7 @@ Library
   if os(darwin)
     frameworks:         Foundation
     cpp-options:        -DMACOSX
+                        -D__OBJC2__
   else
     extra-libraries:    gnustep-base
     cpp-options:        -DGNUSTEP

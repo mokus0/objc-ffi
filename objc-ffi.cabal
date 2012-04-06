@@ -4,6 +4,7 @@ stability:              experimental
 
 cabal-version:          >= 1.2
 build-type:             Custom
+build-depends:          gnustep-config
 extra-tmp-files:        objc-ffi.buildinfo
 
 author:                 James Cook <mokus@deepbondi.net>

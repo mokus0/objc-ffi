@@ -1,21 +1,14 @@
-{-# LANGUAGE DeriveDataTypeable #-}
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE ForeignFunctionInterface #-}
 module Foreign.ObjC.Exception where
 
 import Control.Exception
-import Data.Typeable
 import Foreign.C.Types
 import Foreign.LibFFI.Experimental
 import Foreign.Marshal.Alloc
-import Foreign.ObjC.Object
+import Foreign.ObjC.Types
 import Foreign.Ptr
 import Foreign.StablePtr
 import Foreign.Storable
-
-newtype ObjCException = ObjCException (Ptr ObjCObject)
-    deriving (Eq, Show, Typeable, Storable)
-instance Exception ObjCException
 
 foreign import ccall ffi_call_with_exceptions :: CIF a -> FunPtr a -> Ptr (SigReturn a) -> Ptr (Ptr ()) -> Ptr ObjCException -> IO CInt
 

@@ -1,49 +1,21 @@
-{-# LANGUAGE CPP #-}
 {-# LANGUAGE ForeignFunctionInterface #-}
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
-module Foreign.ObjC.SEL
-    ( SEL(..)
-    , getSEL
-    , IMP(..)
-    , msgSend
-    , msgSendSuper
-    ) where
+module Foreign.ObjC.MsgSend where
 
-import Foreign.C.String
 import Foreign.LibFFI.Experimental
 import Foreign.Marshal
 import Foreign.ObjC.Exception
-import Foreign.ObjC.Object
+import Foreign.ObjC.Types
 import Foreign.Ptr
-import Foreign.Storable
-import System.IO.Unsafe
 
 #include <ffi.h>
-
-newtype SEL a = SEL (Ptr ())
-    deriving (Eq, Ord, Show, Storable, FFIType, ArgType, RetType)
-
-#ifdef GNUSTEP
-foreign import ccall unsafe "sel_register_name"
-    sel_registerName :: CString -> IO (SEL a)
-#else
-foreign import ccall unsafe
-    sel_registerName :: CString -> IO (SEL a)
-#endif
-
-getSEL :: String -> SEL a
-getSEL name = unsafePerformIO (withCString name sel_registerName)
-
-newtype IMP a = IMP (FunPtr (Ptr ObjCObject -> SEL a -> a))
-    deriving (Eq, Ord, Show, Storable, FFIType, ArgType, RetType)
 
 msgSend      :: Dynamic a => Ptr ObjCObject -> SEL a -> a
 msgSendSuper :: Dynamic a => ObjCSuper -> SEL a -> a
 
 #ifdef GNUSTEP
 
-foreign import ccall objc_msg_lookup       :: Ptr ObjCObject -> SEL a -> IO (IMP a)
-foreign import ccall objc_msg_lookup_super :: Ptr ObjCSuper  -> SEL a -> IO (IMP a)
+foreign import ccall unsafe objc_msg_lookup       :: Ptr ObjCObject -> SEL a -> IO (IMP a)
+foreign import ccall unsafe objc_msg_lookup_super :: Ptr ObjCSuper  -> SEL a -> IO (IMP a)
 
 msgSend obj sel = callWithExceptions imp obj sel
     where

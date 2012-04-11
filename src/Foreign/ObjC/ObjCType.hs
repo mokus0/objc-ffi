@@ -5,8 +5,7 @@ module Foreign.ObjC.ObjCType where
 import Data.Int
 import Data.Word
 import Foreign.C.Types
-import Foreign.ObjC.Object
-import Foreign.ObjC.SEL
+import Foreign.ObjC.Types
 import Foreign.Ptr
 
 class ObjCType t where

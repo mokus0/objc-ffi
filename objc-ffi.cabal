@@ -24,11 +24,18 @@ Library
                         cbits/WrapExceptions.m
   
   exposed-modules:      Foreign.ObjC
+                        Foreign.ObjC.Class
                         Foreign.ObjC.Exception
+                        Foreign.ObjC.Ivar
+                        Foreign.ObjC.Method
+                        Foreign.ObjC.MsgSend
                         Foreign.ObjC.ObjCType
                         Foreign.ObjC.Object
+                        Foreign.ObjC.Property
+                        Foreign.ObjC.Protocol
                         Foreign.ObjC.SEL
                         Foreign.ObjC.Sig
+                        Foreign.ObjC.Types
   
   build-depends:        base >= 3 && < 5,
                         libffi-experiments

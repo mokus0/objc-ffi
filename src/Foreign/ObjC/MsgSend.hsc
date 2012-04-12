@@ -7,6 +7,10 @@ import Foreign.ObjC.Exception
 import Foreign.ObjC.Types
 import Foreign.Ptr
 
+#ifdef GNUSTEP
+import System.IO.Unsafe
+#endif
+
 #include <ffi.h>
 
 msgSend      :: Dynamic a => Ptr ObjCObject -> SEL a -> a

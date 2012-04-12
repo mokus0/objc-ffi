@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE ForeignFunctionInterface #-}
 module Foreign.ObjC.Object where
 
@@ -5,6 +6,8 @@ import Foreign.C.String
 import Foreign.C.Types
 import Foreign.ObjC.Types
 import Foreign.Ptr
+
+#ifndef GNUSTEP
 
 foreign import ccall unsafe
     objc_getAssociatedObject :: Id -> Ptr () -> IO Id
@@ -14,6 +17,8 @@ foreign import ccall unsafe
 
 foreign import ccall unsafe
     objc_setAssociatedObject :: Id -> Ptr () -> Id -> ObjCAssociationPolicy -> IO ()
+
+#endif
 
 foreign import ccall unsafe
     object_copy :: Id -> CSize -> IO Id

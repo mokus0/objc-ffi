@@ -36,9 +36,14 @@ type Ivar = Ptr ObjCIvar
 data ObjCCategory
 type Category = Ptr ObjCCategory
 
+#ifndef GNUSTEP
+
+-- (GNUstep doesn't appear to support properties)
 -- struct objc_property (abstract as of ObjC 2)
 data ObjCProperty
 type Property = Ptr ObjCProperty
+
+#endif
 
 newtype IMP a = IMP (FunPtr (Ptr ObjCObject -> SEL a -> a))
     deriving (Eq, Ord, Show, Storable, FFIType, ArgType, RetType)

@@ -1,5 +1,8 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE ForeignFunctionInterface #-}
 module Foreign.ObjC.Property where
+
+#ifndef GNUSTEP
 
 import Foreign.C.String
 import Foreign.ObjC.Types
@@ -9,3 +12,5 @@ foreign import ccall unsafe
 
 foreign import ccall unsafe
     property_getName :: Property -> IO CString
+
+#endif

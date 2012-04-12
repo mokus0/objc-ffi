@@ -1,4 +1,3 @@
-{-# LANGUAGE CPP #-}
 {-# LANGUAGE ForeignFunctionInterface #-}
 module Foreign.ObjC.Protocol where
 
@@ -19,13 +18,6 @@ foreign import ccall unsafe
 foreign import ccall unsafe
     protocol_copyMethodDescriptionList :: Ptr Protocol -> CSChar -> CSChar -> Ptr CUInt -> IO (Ptr ObjCMethodDescription)
 
-#ifndef GNUSTEP
-
-foreign import ccall unsafe
-    protocol_copyPropertyList :: Ptr Protocol -> Ptr CUInt -> Ptr Property
-
-#endif
-
 foreign import ccall unsafe
     protocol_copyProtocolList :: Ptr Protocol -> Ptr CUInt -> IO (Ptr (Ptr Protocol))
 
@@ -34,13 +26,6 @@ foreign import ccall "&"
 
 foreign import ccall unsafe
     protocol_getName :: Ptr Protocol -> IO CString
-
-#ifndef GNUSTEP
-
-foreign import ccall unsafe
-    protocol_getProperty :: Ptr Protocol -> CString -> CSChar -> CSChar -> IO Property
-
-#endif
 
 foreign import ccall unsafe
     protocol_isEqual :: Ptr Protocol -> Ptr Protocol -> IO CSChar

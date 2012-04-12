@@ -1,4 +1,3 @@
-{-# LANGUAGE CPP #-}
 {-# LANGUAGE ForeignFunctionInterface #-}
 module Foreign.ObjC.Class where
 
@@ -26,13 +25,6 @@ foreign import ccall unsafe
 
 foreign import ccall unsafe
     class_copyMethodList :: Class -> Ptr CUInt -> IO (Ptr (ObjCMethod Any))
-
-#ifndef GNUSTEP
-
-foreign import ccall unsafe
-    class_copyPropertyList :: Class -> Ptr CUInt -> IO Property
-
-#endif
 
 foreign import ccall unsafe
     class_copyProtocolList :: Class -> Ptr CUInt -> IO (Ptr (Ptr Protocol))
@@ -66,13 +58,6 @@ foreign import ccall unsafe
 
 foreign import ccall unsafe
     class_getName :: Class -> IO CString
-
-#ifndef GNUSTEP
-
-foreign import ccall unsafe
-    class_getProperty :: Class -> CString -> IO Property
-
-#endif
 
 foreign import ccall unsafe
     class_getSuperclass :: Class -> IO Class

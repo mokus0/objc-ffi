@@ -1,4 +1,3 @@
-{-# LANGUAGE CPP #-}
 {-# LANGUAGE ForeignFunctionInterface #-}
 module Foreign.ObjC.SEL
     ( SEL(..)
@@ -17,13 +16,7 @@ import System.IO.Unsafe
 castSEL :: SEL a -> SEL b
 castSEL (SEL p) = SEL p
 
-#ifdef GNUSTEP
-foreign import ccall unsafe "sel_register_name"
-    sel_registerName :: CString -> IO (SEL a)
-#else
-foreign import ccall unsafe
-    sel_registerName :: CString -> IO (SEL a)
-#endif
+foreign import ccall unsafe sel_registerName :: CString -> IO (SEL a)
 
 getSEL :: String -> SEL a
 getSEL name = unsafePerformIO (withCString name sel_registerName)

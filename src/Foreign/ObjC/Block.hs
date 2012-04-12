@@ -1,7 +1,12 @@
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE RecordWildCards #-}
--- |WARNING: this code is neither complete nor correct.
+{-# LANGUAGE RankNTypes #-}
 module Foreign.ObjC.Block where
 
+import Control.Monad.State
+import Data.Bits
 import Data.Int
 import Data.Word
 import Foreign.C
@@ -11,12 +16,21 @@ import Foreign.Storable
 newtype BlockPtr a = BlockPtr (Ptr (Block a))
     deriving (Eq, Show)
 
+newtype BlockFlags = BlockFlags Int32
+    deriving (Eq, Ord, Read, Show, Enum, Bounded, Num, Bits, Storable)
+
+hasCopyDisposeFlagBit   = 25 :: Int
+hasConstructorFlagBit   = 26 :: Int
+isGlobalFlagBit         = 28 :: Int
+hasStretFlagBit         = 29 :: Int
+hasSignatureFlagBit     = 30 :: Int
+
 data Block a = Block
     { isa           :: Ptr ()
-    , flags         :: Int32
+    , flags         :: BlockFlags
     , reserved      :: Int32
     , invoke        :: FunPtr (BlockPtr a -> a)
-    , descriptor    :: Ptr BlockDescriptor
+    , descriptor    :: Ptr (BlockDescriptor a)
     } deriving (Eq, Show)
 
 instance Storable (Block a) where
@@ -36,33 +50,78 @@ instance Storable (Block a) where
         pokeByteOff p 0x10 invoke
         pokeByteOff p 0x18 descriptor
 
--- NOTE: I'm seeing conflicting reports on the net about this
--- structure.  For example:
+-- NOTE: The actual layout of this structure depends on the 'flags' field
+-- of the block it is attached to.  See:
 --
--- http://hackage.haskell.org/trac/ghc/wiki/BlockObjects/FakingIt
--- http://cocoawithlove.com/2009/10/how-blocks-are-implemented-and.html
 -- http://clang.llvm.org/docs/Block-ABI-Apple.txt
---
--- https://github.com/mikeash/MABlockClosure/blob/master/README.markdown
---   suggests that the implementation is different between GCC and CLANG...
-data BlockDescriptor = BlockDescriptor
+data BlockDescriptor a = BlockDescriptor
     { reserved2     :: Word64
     , size          :: Word64
+    , copyHelper    :: FunPtr (BlockPtr a -> BlockPtr a -> IO ())
+    , disposeHelper :: FunPtr (BlockPtr a -> IO ())
     , signature     :: CString
-    , undocumented  :: Word64
     } deriving (Eq, Show)
 
-instance Storable BlockDescriptor where
-    sizeOf    _ = 0x20
-    alignment _ = 0x08
-    peek p = do
-        reserved2       <- peekByteOff p 0x00
-        size            <- peekByteOff p 0x08
-        signature       <- peekByteOff p 0x10
-        undocumented    <- peekByteOff p 0x18
-        return BlockDescriptor{..}
-    poke p BlockDescriptor{..} = do
-        pokeByteOff p 0x00 reserved2
-        pokeByteOff p 0x08 size
-        pokeByteOff p 0x10 signature
-        pokeByteOff p 0x18 undocumented
+nextPtr :: (Monad m, Storable t) => StateT (Ptr a) m (Ptr t)
+nextPtr = do
+    p <- liftM castPtr get 
+    let proxy = (undefined :: t a -> a) p
+        p' = alignPtr p (alignment proxy)
+    put $! plusPtr p' (sizeOf proxy)
+    return p'
+
+sizeOfBlockDescriptor :: BlockFlags -> Int
+sizeOfBlockDescriptor flags = endPtr `minusPtr` nullPtr
+    where
+        endPtr = execState (peekBlockDescriptorWith (nextPtr >>= fakePeek) flags) nullPtr
+        fakePeek :: Ptr t -> State s t
+        fakePeek _ = return undefined
+
+peekBlockDescriptor :: BlockFlags -> Ptr (BlockDescriptor a) -> IO (BlockDescriptor a)
+peekBlockDescriptor = evalStateT . peekBlockDescriptorWith (lift . peek =<< nextPtr)
+
+pokeBlockDescriptor :: BlockFlags -> Ptr (BlockDescriptor a) -> BlockDescriptor a -> IO ()
+pokeBlockDescriptor flags = flip (evalStateT . pokeBlockDescriptorWith pokeNext flags)
+    where pokeNext it = lift . flip poke it =<< nextPtr
+
+peekBlockDescriptorWith :: Monad m =>
+       (forall t. Storable t => m t)
+    -> BlockFlags -> m (BlockDescriptor a)
+peekBlockDescriptorWith peekNext flags = do
+    reserved2       <- peekNext
+    size            <- peekNext
+    copyHelper      <- if testBit flags hasCopyDisposeFlagBit
+        then peekNext
+        else return nullFunPtr
+    disposeHelper   <- if testBit flags hasCopyDisposeFlagBit
+        then peekNext
+        else return nullFunPtr
+    signature       <- if testBit flags hasSignatureFlagBit
+        then peekNext
+        else return nullPtr
+    return BlockDescriptor{..}
+
+pokeBlockDescriptorWith :: Monad m => 
+       (forall t. Storable t => t -> m ())
+    -> BlockFlags -> BlockDescriptor a -> m ()
+pokeBlockDescriptorWith pokeNext flags BlockDescriptor{..} = do
+    pokeNext reserved2
+    pokeNext size
+    when (testBit flags hasCopyDisposeFlagBit) $ do
+        pokeNext copyHelper
+        pokeNext disposeHelper
+    when (testBit flags hasSignatureFlagBit) $ do
+        pokeNext signature
+
+getBlockDescriptor :: Block a -> IO (BlockDescriptor a)
+getBlockDescriptor blk = peekBlockDescriptor (flags blk) (descriptor blk)
+
+-- |Sets BLOCK_HAS_COPY_DISPOSE and BLOCK_HAS_SIGNATURE flags appropriately
+-- for the given block descriptor.  Note that this does not even try to
+-- determine whether any other flags should be set.
+descriptorFormatFlags :: BlockDescriptor a -> BlockFlags
+descriptorFormatFlags BlockDescriptor{..} = foldr (.|.) 0 $ concat
+    [ [ bit hasCopyDisposeFlagBit | copyHelper    /= nullFunPtr ]
+    , [ bit hasCopyDisposeFlagBit | disposeHelper /= nullFunPtr ]
+    , [ bit hasSignatureFlagBit   | signature     /= nullPtr    ]
+    ]

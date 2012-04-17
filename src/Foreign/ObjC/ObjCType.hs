@@ -7,6 +7,7 @@ import Data.Word
 import Foreign.C.Types
 import Foreign.ObjC.Types
 import Foreign.Ptr
+import Foreign.StablePtr
 
 class ObjCType t where
     typeString :: p t -> String
@@ -19,6 +20,9 @@ instance ObjCType () where
 
 instance ObjCType a => ObjCType (Ptr a) where
     typeString = ptrTypeString . (const Nothing :: p (q a) -> Maybe a)
+
+instance ObjCType (StablePtr a) where
+    typeString _ = "^v"
 
 instance ObjCType (FunPtr a) where
     typeString _ = "?"

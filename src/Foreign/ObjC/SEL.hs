@@ -4,6 +4,7 @@ module Foreign.ObjC.SEL
     , castSEL
     , getSEL
     , selName
+    , selTypeString
     , sel_isEqual
     , IMP(..)
     ) where
@@ -11,6 +12,8 @@ module Foreign.ObjC.SEL
 import Foreign.C.String
 import Foreign.C.Types
 import Foreign.ObjC.Types
+import Foreign.ObjC.Sig
+import Foreign.Ptr
 import System.IO.Unsafe
 
 castSEL :: SEL a -> SEL b
@@ -31,3 +34,6 @@ selName sel = unsafePerformIO $ do
 
 foreign import ccall unsafe
     sel_isEqual :: SEL a -> SEL b -> IO CSChar
+
+selTypeString :: ObjCSigType t => SEL t -> String
+selTypeString = sigTypeString . (undefined :: SEL t -> p (Ptr ObjCObject -> SEL t -> t))

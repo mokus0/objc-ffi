@@ -21,11 +21,13 @@ Library
   ghc-options:          -fwarn-unused-imports -fwarn-unused-binds
   
   c-sources:            cbits/HSException.m
+                        cbits/HSObject.m
                         cbits/WrapExceptions.m
   
   exposed-modules:      Foreign.ObjC
                         Foreign.ObjC.Class
                         Foreign.ObjC.Exception
+                        Foreign.ObjC.HSObject
                         Foreign.ObjC.Ivar
                         Foreign.ObjC.Method
                         Foreign.ObjC.MsgSend
@@ -42,10 +44,12 @@ Library
   
   extra-libraries:      objc
   
+  cpp-options:          -D__OBJC2__
+  cc-options:           -D__OBJC2__
+  
   if os(darwin)
     frameworks:         Foundation
     cpp-options:        -DMACOSX
-                        -D__OBJC2__
   else
     extra-libraries:    gnustep-base
     cpp-options:        -DGNUSTEP

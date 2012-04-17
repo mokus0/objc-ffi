@@ -93,7 +93,7 @@ foreign import ccall unsafe
     objc_allocateClassPair :: Class -> CString -> CSize -> IO Class
 
 foreign import ccall unsafe
-    objc_getClass :: CString -> IO Id
+    objc_getClass :: CString -> IO Class
 
 foreign import ccall unsafe
     objc_getClassList :: Ptr Class -> CInt -> IO CInt

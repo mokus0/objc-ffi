@@ -7,6 +7,7 @@ module Foreign.ObjC.Types where
 import Control.Applicative
 import Control.Exception
 import Data.Typeable
+import Foreign.C.String
 import Foreign.C.Types
 import Foreign.LibFFI.Experimental
 import Foreign.Ptr
@@ -65,7 +66,27 @@ type Id = Ptr ObjCObject
 type Protocol = ObjCObject
 
 -- struct objc_method_description
-data ObjCMethodDescription
+-- TODO: check whether this exists and/or is the same on GNUstep...
+data ObjCMethodDescription a = ObjCMethodDescription
+    { methodName    :: SEL a
+    , methodType    :: CString
+    } deriving (Eq, Ord, Show)
+
+instance Storable (ObjCMethodDescription a) where
+    sizeOf    _ = #size struct objc_method_description
+    alignment   = liftA2 max (alignment . methodName) (alignment . methodType) 
+    peek p = do
+        methodName <- (#peek struct objc_method_description, name)  p
+        methodType <- (#peek struct objc_method_description, types) p
+        return ObjCMethodDescription{..}
+    poke p ObjCMethodDescription{..} = do
+        (#poke struct objc_method_description, name)  p methodName
+        (#poke struct objc_method_description, types) p methodType
+
+instance FFIType (ObjCMethodDescription a) where
+    ffiType = Type (struct [ffiTypeOf_ methodName, ffiTypeOf_ methodType])
+instance ArgType (ObjCMethodDescription a)
+instance RetType (ObjCMethodDescription a)
 
 -- struct objc_super
 data ObjCSuper = ObjCSuper

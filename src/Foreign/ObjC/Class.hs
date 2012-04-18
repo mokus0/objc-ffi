@@ -6,7 +6,6 @@ import Data.List
 import Data.Word
 import Foreign.C.String
 import Foreign.C.Types
-import Foreign.Marshal
 import Foreign.ObjC.ObjCType
 import Foreign.ObjC.SEL
 import Foreign.ObjC.Types
@@ -14,6 +13,7 @@ import Foreign.Ptr
 import Foreign.Storable
 import GHC.Base (Any)
 import qualified Foreign.ObjC.Raw.Class as Raw
+import Foreign.ObjC.Raw.Utils
 
 class_addIvar :: (ObjCType t, Storable t) => Class -> String -> proxy t -> IO Bool
 class_addIvar cls name ivarType =
@@ -55,16 +55,6 @@ class_conformsToProtocol :: Class -> Ptr Protocol -> IO Bool
 class_conformsToProtocol cls protocol =
     fmap fromObjCBool $
         Raw.class_conformsToProtocol cls protocol
-
-wrapCopyListFn :: (Integral a, Storable a, Storable b) => (Ptr a -> IO (Ptr b)) -> IO [b]
-wrapCopyListFn copyList =
-    alloca $ \outCount -> do
-        buf <- copyList outCount
-        
-        n      <- peek outCount
-        things <- peekArray (fromIntegral n) buf
-        free buf
-        return things
 
 class_getIvarList :: Class -> IO [Ivar]
 class_getIvarList = wrapCopyListFn . Raw.class_copyIvarList
@@ -154,17 +144,6 @@ objc_allocateClassPair super name extraBytes =
 
 objc_getClass :: String -> IO Class
 objc_getClass name = withCString name Raw.objc_getClass
-
-wrapGetListFn :: (Integral a, Storable a, Storable b) => (Ptr b -> a -> IO a) -> IO [b]
-wrapGetListFn getList = do
-    n <- getList nullPtr 0
-    
-    buf <- mallocArray (fromIntegral n)
-    getList buf n
-    
-    things <- peekArray (fromIntegral n) buf
-    free buf
-    return things
 
 objc_getClassList :: IO [Class]
 objc_getClassList = wrapGetListFn Raw.objc_getClassList

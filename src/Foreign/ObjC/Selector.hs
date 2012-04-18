@@ -9,9 +9,9 @@ module Foreign.ObjC.Selector
     ) where
 
 import Foreign.C.String
-import Foreign.C.Types
 import qualified Foreign.ObjC.Raw.Selector as Raw
 import Foreign.ObjC.Sig
+import Foreign.ObjC.Types
 import Foreign.Ptr
 import System.IO.Unsafe
 

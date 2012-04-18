@@ -4,6 +4,7 @@ module Foreign.ObjC.SEL
     , castSEL
     , getSEL
     , selName
+    , ObjCSigType
     , selTypeString
     , sel_isEqual
     , IMP(..)

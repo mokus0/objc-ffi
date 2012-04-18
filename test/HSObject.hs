@@ -3,7 +3,6 @@ module HSObject where
 
 import Control.Monad
 import Data.Dynamic
-import Foreign.C
 import Foreign.ObjC
 import Foreign.ObjC.HSObject
 import Foreign.Ptr
@@ -11,7 +10,7 @@ import Prelude hiding (init)
 import System.Mem
 
 withAutoreleasePool action = do
-    _NSAutoreleasePool <- withCString "NSAutoreleasePool" objc_getClass
+    _NSAutoreleasePool <- objc_getClass "NSAutoreleasePool"
     pool <- msgSend (castPtr _NSAutoreleasePool) (getSEL "alloc") :: IO Id
     pool <- msgSend pool                         (getSEL "init")  :: IO Id
     
@@ -25,25 +24,22 @@ foreign import ccall "wrapper"
     wrapInitIMP :: (Ptr ObjCObject -> SEL (IO Id) -> IO Id) -> IO (IMP (IO Id))
 
 main = withAutoreleasePool $ do
-    _NSObject <- withCString "NSObject" objc_getClass
+    _NSObject <- objc_getClass "NSObject"
     
-    fooStr  <- newCString "Foo"
-    foo     <- objc_allocateClassPair _NSObject fooStr 0
+    foo     <- objc_allocateClassPair _NSObject "Foo" 0
     fooMeta <- object_getClass (castPtr foo)
     
-    __hsSelf__ <- newCString "__hsSelf__"
     fooInit_IMP <- wrapInitIMP $ \self _sel -> do
         self <- msgSendSuper (ObjCSuper self _NSObject) _sel
         
         when (self /= nullPtr) $ do
-            ivar <- object_getInstanceVariable self __hsSelf__ nullPtr
+            ivar <- object_getInstanceVariable self "__hsSelf__" nullPtr
             hsSelf <- object_getIvar self ivar
             putStrLn ("hsSelf (in init): " ++ show hsSelf)
         
         return self
     
-    init_type <- newCString (selTypeString init)
-    class_addMethod foo init fooInit_IMP init_type
+    class_addMethod foo init fooInit_IMP
     
     let initFoo = do
             putStrLn "Foo initialized"

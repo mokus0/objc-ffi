@@ -102,22 +102,13 @@ instance RetType ObjCSuper
 
 newtype ObjCAssociationPolicy = ObjCAssociationPolicy CUIntPtr
 
-data ObjCBool = YES | NO
-    deriving (Eq, Ord, Read, Show, Enum, Bounded)
+toObjCBool :: Bool -> CSChar
+toObjCBool False = 0
+toObjCBool True  = 1
 
-instance Storable ObjCBool where
-    sizeOf    _ = #size BOOL
-    alignment _ = #size BOOL
-    peek = fmap toBool . peek . castPtr
-        where
-            toBool :: CSChar -> ObjCBool
-            toBool 0 = NO
-            toBool _ = YES
-    poke p = poke (castPtr p) . fromBool
-        where
-            fromBool :: ObjCBool -> CSChar
-            fromBool YES = 1
-            fromBool NO  = 0
+fromObjCBool :: CSChar -> Bool
+fromObjCBool 0 = False
+fromObjCBool 1 = True
 
 newtype ObjCException = ObjCException (Ptr ObjCObject)
     deriving (Eq, Show, Typeable, Storable)

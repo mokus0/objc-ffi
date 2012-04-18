@@ -21,10 +21,10 @@ foreign import ccall unsafe
     class_conformsToProtocol :: Class -> Ptr Protocol -> IO CSChar
 
 foreign import ccall unsafe
-    class_copyIvarList :: Class -> Ptr CUInt -> IO Ivar
+    class_copyIvarList :: Class -> Ptr CUInt -> IO (Ptr Ivar)
 
 foreign import ccall unsafe
-    class_copyMethodList :: Class -> Ptr CUInt -> IO (Ptr (ObjCMethod Any))
+    class_copyMethodList :: Class -> Ptr CUInt -> IO (Ptr (Method Any))
 
 foreign import ccall unsafe
     class_copyProtocolList :: Class -> Ptr CUInt -> IO (Ptr (Ptr Protocol))

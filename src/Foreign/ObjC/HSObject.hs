@@ -12,17 +12,12 @@ import Control.Applicative
 import Control.Concurrent.MVar
 import Control.Monad
 import Data.Dynamic
-import Data.List
-import Data.Word
-import Foreign.C.String
 import Foreign.C.Types
 import Foreign.ForeignPtr hiding (newForeignPtr)
 import Foreign.Concurrent (newForeignPtr)
 import Foreign.ObjC
 import Foreign.Ptr
 import Foreign.StablePtr
-import Foreign.Storable
-import System.IO.Unsafe
 import System.Mem.Weak
 
 data HSO = HSO {-# UNPACK #-} !(ForeignPtr ObjCObject) ![Dynamic]
@@ -32,12 +27,12 @@ registerHSObjectClass :: Class -> Maybe (IO Dynamic) -> IO ()
 registerHSObjectClass cls mbInit = do
     super       <- class_getSuperclass cls
     protoExists <- class_conformsToProtocol super _HSObject_protocol
-    if (protoExists == 0) 
+    if not protoExists
         then do
             let hsInit = maybe (return []) (fmap return) mbInit
             
             __hsInit_IMP <- wrapHsInitIMP (\_ _ -> newStablePtr =<< hsInit)
-            class_addMethod cls __hsInit __hsInit_IMP __hsInit_type
+            class_addMethod cls __hsInit __hsInit_IMP
             
             implementMemoryManagement cls
         else do
@@ -49,7 +44,7 @@ registerHSObjectClass cls mbInit = do
                     
                     newStablePtr (d:ds)
                 
-                class_addMethod cls __hsInit __hsInit_IMP __hsInit_type
+                class_addMethod cls __hsInit __hsInit_IMP
                 return ()
     
     objc_registerClassPair cls
@@ -59,11 +54,11 @@ registerHSObjectClass cls mbInit = do
 
 implementMemoryManagement :: Class -> IO ()
 implementMemoryManagement cls = do
-    class_addIvar cls __hsSelf__ ptrSz ptrAlign __hsSelf__type
-    class_addIvar cls __hsRetainedSelf__ ptrSz ptrAlign __hsRetainedSelf__type
+    class_addIvar cls "__hsSelf__"         [nullStablePtr]
+    class_addIvar cls "__hsRetainedSelf__" [nullStablePtr]
     
-    __hsSelf__ivar <- class_getInstanceVariable cls __hsSelf__
-    __hsRetainedSelf__ivar <- class_getInstanceVariable cls __hsRetainedSelf__
+    __hsSelf__ivar         <- class_getInstanceVariable cls "__hsSelf__"
+    __hsRetainedSelf__ivar <- class_getInstanceVariable cls "__hsRetainedSelf__"
     
     let getRetainedSelf :: Id -> IO (StablePtr HSO)
         getRetainedSelf self =
@@ -164,11 +159,11 @@ implementMemoryManagement cls = do
         
         msgSendSuper (ObjCSuper self super) deallocSel
     
-    class_addMethod cls __hsGetSelf __hsGetSelf_IMP __hsGetSelf_type
+    class_addMethod cls __hsGetSelf __hsGetSelf_IMP
     
-    class_addMethod cls retain retain_IMP retain_type
-    class_addMethod cls release release_IMP release_type
-    class_addMethod cls dealloc dealloc_IMP dealloc_type
+    class_addMethod cls retain retain_IMP
+    class_addMethod cls release release_IMP
+    class_addMethod cls dealloc dealloc_IMP
     
     return  ()
 
@@ -177,7 +172,7 @@ importObject obj = do
     cls         <- object_getClass obj
     isHSObject  <- class_conformsToProtocol cls _HSObject_protocol
     
-    sptr <- if isHSObject /= 0
+    sptr <- if isHSObject
         then msgSend obj __hsGetSelf
         else return nullStablePtr
     
@@ -186,23 +181,6 @@ importObject obj = do
         else do
             fp <- newIdForeignPtr obj
             return $! HSO fp []
-
-ptrSz :: CSize
-ptrSz    = fromIntegral (sizeOf nullPtr)
-
-ptrAlign :: Word8
-#ifdef GNUSTEP
--- workaround for a GNUstep bug... it'll make objects
--- ridiculously large, but it's necessary for now.
--- the bug has been reported and hopefully will be fixed.
-ptrAlign = 8
-#else
-ptrAlign = lg2 (alignment nullPtr)
-
-lg2 :: Int -> Word8
-lg2 x = maybe 0 fromIntegral (findIndex (\i -> i >= x || i <= 0) (iterate (2 *) 1))
-#endif
-
 
 deRefAndFreeStablePtr :: StablePtr a -> IO a
 deRefAndFreeStablePtr sp = deRefStablePtr sp <* freeStablePtr sp
@@ -222,20 +200,6 @@ nullStablePtr = castPtrToStablePtr nullPtr
 foreign import ccall _HSObject_protocol :: Ptr Protocol
 
 foreign import ccall releaseObject :: Ptr ObjCObject -> IO ()
-
--- ivar names and type strings
-
-__hsSelf__ :: CString
-__hsSelf__ = unsafePerformIO (newCString "__hsSelf__")
-
-__hsSelf__type :: CString
-__hsSelf__type = unsafePerformIO (newCString "^v")
-
-__hsRetainedSelf__ :: CString
-__hsRetainedSelf__ = unsafePerformIO (newCString "__hsRetainedSelf__")
-
-__hsRetainedSelf__type :: CString
-__hsRetainedSelf__type = unsafePerformIO (newCString "^v")
 
 -- selectors and type aliases for convenience
 
@@ -264,28 +228,6 @@ release = getSEL "release"
 
 dealloc :: SEL Void
 dealloc = getSEL "dealloc"
-
--- selector type strings
-
-{-# NOINLINE __hsInit_type #-}
-__hsInit_type :: CString
-__hsInit_type = unsafePerformIO (newCString (selTypeString __hsInit))
-
-{-# NOINLINE __hsGetSelf_type #-}
-__hsGetSelf_type :: CString
-__hsGetSelf_type = unsafePerformIO (newCString (selTypeString __hsGetSelf))
-
-{-# NOINLINE retain_type #-}
-retain_type :: CString
-retain_type = unsafePerformIO (newCString (selTypeString retain))
-
-{-# NOINLINE release_type #-}
-release_type :: CString
-release_type = unsafePerformIO (newCString (selTypeString release))
-
-{-# NOINLINE dealloc_type #-}
-dealloc_type :: CString
-dealloc_type = unsafePerformIO (newCString (selTypeString dealloc))
 
 -- method IMP wrappers
 

@@ -1,18 +1,16 @@
-{-# LANGUAGE ForeignFunctionInterface #-}
-module Foreign.ObjC.SEL
+module Foreign.ObjC.Selector
     ( SEL(..)
     , castSEL
     , getSEL
     , selName
     , ObjCSigType
     , selTypeString
-    , sel_isEqual
     , IMP(..)
     ) where
 
 import Foreign.C.String
 import Foreign.C.Types
-import Foreign.ObjC.Types
+import qualified Foreign.ObjC.Raw.Selector as Raw
 import Foreign.ObjC.Sig
 import Foreign.Ptr
 import System.IO.Unsafe
@@ -20,21 +18,11 @@ import System.IO.Unsafe
 castSEL :: SEL a -> SEL b
 castSEL (SEL p) = SEL p
 
-foreign import ccall unsafe sel_registerName :: CString -> IO (SEL a)
-
 getSEL :: String -> SEL a
-getSEL name = unsafePerformIO (withCString name sel_registerName)
-
-foreign import ccall unsafe
-    sel_getName :: SEL a -> IO CString
+getSEL name = unsafePerformIO (withCString name Raw.sel_registerName)
 
 selName :: SEL a -> String
-selName sel = unsafePerformIO $ do
-    name <- sel_getName sel
-    peekCString name
-
-foreign import ccall unsafe
-    sel_isEqual :: SEL a -> SEL b -> IO CSChar
+selName sel = unsafePerformIO (peekCString =<< Raw.sel_getName sel)
 
 selTypeString :: ObjCSigType t => SEL t -> String
 selTypeString = sigTypeString . (undefined :: SEL t -> p (Ptr ObjCObject -> SEL t -> t))

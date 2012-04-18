@@ -12,7 +12,7 @@ module Foreign.ObjC
     , module Foreign.ObjC.Property
 #endif
     , module Foreign.ObjC.Protocol
-    , module Foreign.ObjC.SEL
+    , module Foreign.ObjC.Selector
     , module Foreign.ObjC.Sig
     , module Foreign.ObjC.Types
     ) where
@@ -31,6 +31,6 @@ import Foreign.ObjC.Property
 #endif
 
 import Foreign.ObjC.Protocol
-import Foreign.ObjC.SEL
+import Foreign.ObjC.Selector
 import Foreign.ObjC.Sig
 import Foreign.ObjC.Types

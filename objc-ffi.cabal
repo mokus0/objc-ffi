@@ -40,8 +40,9 @@ Library
                         Foreign.ObjC.Raw.Method
                         Foreign.ObjC.Raw.Object
                         Foreign.ObjC.Raw.Protocol
+                        Foreign.ObjC.Raw.Selector
                         Foreign.ObjC.Raw.Utils
-                        Foreign.ObjC.SEL
+                        Foreign.ObjC.Selector
                         Foreign.ObjC.Sig
                         Foreign.ObjC.Types
   

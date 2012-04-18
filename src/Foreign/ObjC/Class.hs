@@ -7,7 +7,7 @@ import Data.Word
 import Foreign.C.String
 import Foreign.C.Types
 import Foreign.ObjC.ObjCType
-import Foreign.ObjC.SEL
+import Foreign.ObjC.Selector
 import Foreign.ObjC.Types
 import Foreign.Ptr
 import Foreign.Storable

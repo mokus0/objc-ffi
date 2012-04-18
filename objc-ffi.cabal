@@ -35,6 +35,13 @@ Library
                         Foreign.ObjC.Object
                         Foreign.ObjC.Property
                         Foreign.ObjC.Protocol
+                        Foreign.ObjC.Raw.Class
+                        Foreign.ObjC.Raw.Exception
+                        Foreign.ObjC.Raw.Ivar
+                        Foreign.ObjC.Raw.Method
+                        Foreign.ObjC.Raw.Object
+                        Foreign.ObjC.Raw.Property
+                        Foreign.ObjC.Raw.Protocol
                         Foreign.ObjC.SEL
                         Foreign.ObjC.Sig
                         Foreign.ObjC.Types

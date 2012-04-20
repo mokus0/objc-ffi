@@ -167,6 +167,7 @@ implementMemoryManagement cls = do
     
     return  ()
 
+-- TODO: make sure finalizers are run within the scope of an autorelease pool
 importObject :: Ptr ObjCObject -> IO HSO
 importObject obj = do
     cls         <- object_getClass obj

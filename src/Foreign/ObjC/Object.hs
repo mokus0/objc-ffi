@@ -55,3 +55,12 @@ object_setInstanceVariable self name p =
 
 object_setIvar :: Id -> Ivar -> Id -> IO ()
 object_setIvar = Raw.object_setIvar
+
+retainObject  :: Ptr ObjCObject -> IO (Ptr ObjCObject)
+retainObject = Raw.retainObject
+
+releaseObject :: Ptr ObjCObject -> IO ()
+releaseObject = Raw.releaseObject
+
+autoreleaseObject  :: Ptr ObjCObject -> IO (Ptr ObjCObject)
+autoreleaseObject = Raw.autoreleaseObject

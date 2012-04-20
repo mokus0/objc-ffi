@@ -22,6 +22,7 @@ Library
   
   c-sources:            cbits/HSException.m
                         cbits/HSObject.m
+                        cbits/Object.m
                         cbits/WrapExceptions.m
   
   exposed-modules:      Foreign.ObjC

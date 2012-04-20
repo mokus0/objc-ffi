@@ -49,3 +49,13 @@ foreign import ccall unsafe
 
 foreign import ccall unsafe
     object_setIvar :: Id -> Ivar -> Id -> IO ()
+
+-- memory managament conveniences
+foreign import ccall
+    retainObject  :: Ptr ObjCObject -> IO (Ptr ObjCObject)
+
+foreign import ccall
+    releaseObject :: Ptr ObjCObject -> IO ()
+
+foreign import ccall
+    autoreleaseObject  :: Ptr ObjCObject -> IO (Ptr ObjCObject)

@@ -179,6 +179,7 @@ importObject obj = do
     if sptr /= nullStablePtr
         then deRefAndFreeStablePtr sptr
         else do
+            retainObject obj
             fp <- newIdForeignPtr obj
             return $! HSO fp []
 
@@ -198,8 +199,6 @@ nullStablePtr = castPtrToStablePtr nullPtr
 
 {-# NOINLINE _HSObject_protocol #-}
 foreign import ccall _HSObject_protocol :: Ptr Protocol
-
-foreign import ccall releaseObject :: Ptr ObjCObject -> IO ()
 
 -- selectors and type aliases for convenience
 

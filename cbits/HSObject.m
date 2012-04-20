@@ -60,8 +60,3 @@
 Protocol *_HSObject_protocol() {
     return @protocol(HSObject);
 }
-
-// used as a ForeignPtr finalizer
-void releaseObject(id obj) {
-    [obj release];
-}

@@ -191,9 +191,7 @@ whenJust :: Monad m => Maybe a -> (a -> m ()) -> m ()
 whenJust = flip (maybe (return ()))
 
 newIdForeignPtr :: Ptr ObjCObject -> IO (ForeignPtr ObjCObject)
-newIdForeignPtr = newForeignPtr <*> releaseObject'
-releaseObject' obj = do
-    releaseObject obj
+newIdForeignPtr = newForeignPtr <*> (unwrapException . finalizeObject)
 
 nullStablePtr :: StablePtr a
 nullStablePtr = castPtrToStablePtr nullPtr
@@ -242,3 +240,6 @@ foreign import ccall "wrapper"
 
 foreign import ccall "wrapper"
     wrapVoidIMP :: (Ptr ObjCObject -> SEL Void -> Void) -> IO (IMP Void)
+
+foreign import ccall
+    finalizeObject :: Ptr ObjCObject -> Ptr ObjCException -> IO CInt

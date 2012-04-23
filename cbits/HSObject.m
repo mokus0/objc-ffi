@@ -1,5 +1,6 @@
 #import <Foundation/Foundation.h>
 #import <HsFFI.h>
+#import "HSException.h"
 
 // A protocol for objects that are aware of their interactions with
 // the Haskell runtime system.
@@ -59,4 +60,14 @@
 
 Protocol *_HSObject_protocol() {
     return @protocol(HSObject);
+}
+
+EXC_WRAPPER (finalizeObject, id obj) {
+    WRAP_EXC(
+        NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
+        
+        [obj release];
+        
+        [pool release];
+    )
 }

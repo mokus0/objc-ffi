@@ -7,16 +7,6 @@ HSException *newHSException(const char *reason, void * exc) {
                                      exception: exc ];
 }
 
-int ffi_call_with_exceptions(ffi_cif *cif, void (*impl)(), void *ret, void **args, void **excOut) {
-    @try {
-        ffi_call(cif, impl, ret, args);
-    } @catch (HSException *exc) {
-        *excOut = [exc hsException];
-        return 1;
-    } @catch (id exc) {
-        *excOut = [exc retain];
-        return 2;
-    }
-    
-    return 0;
+EXC_WRAPPER(ffi_call_with_exceptions, ffi_cif *cif, void (*impl)(), void *ret, void **args) {
+    WRAP_EXC(ffi_call(cif, impl, ret, args));
 }

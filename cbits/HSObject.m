@@ -50,11 +50,13 @@
 // This function should either return a cached HSO or create a new
 // one by calling __hsInit and creating a ForeignPtr to the object
 // itself.  The object should be retained when the ForeignPtr is
-// created and its finalizer should release the object.
+// created and its finalizer should release the object.  The BOOL
+// return value should indicate whether the object was initialized
+// by the call.
 //
 // Even if the HSO already existed, the returned StablePtr must
 // be freshly allocated because it will be freed by 'importObject'.
-- (HsStablePtr) __hsGetSelf;
+- (HsStablePtr) __hsGetSelf: (BOOL *) outIsNew;
 
 @end
 
@@ -63,11 +65,13 @@ Protocol *_HSObject_protocol() {
 }
 
 EXC_WRAPPER (finalizeObject, id obj) {
-    WRAP_EXC(
-        NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
-        
-        [obj release];
-        
+    NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
+    
+    @try {
+        WRAP_EXC([obj release])
+    }
+    
+    @finally {
         [pool release];
-    )
+    }
 }

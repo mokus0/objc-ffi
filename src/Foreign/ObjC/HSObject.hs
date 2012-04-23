@@ -6,18 +6,22 @@ module Foreign.ObjC.HSObject
     , registerHSObjectClass
     , implementMemoryManagement
     , importObject
+    , importObject_
     ) where
 
 import Control.Applicative
 import Control.Concurrent.MVar
 import Control.Monad
 import Data.Dynamic
+import Data.Maybe
 import Foreign.C.Types
-import Foreign.ForeignPtr hiding (newForeignPtr)
 import Foreign.Concurrent (newForeignPtr)
+import Foreign.ForeignPtr hiding (newForeignPtr)
+import Foreign.Marshal.Alloc
 import Foreign.ObjC
 import Foreign.Ptr
 import Foreign.StablePtr
+import Foreign.Storable
 import System.Mem.Weak
 
 data HSO = HSO {-# UNPACK #-} !(ForeignPtr ObjCObject) ![Dynamic]
@@ -88,13 +92,16 @@ implementMemoryManagement cls = do
     super <- class_getSuperclass cls
     
     -- return the "haskell self", initializing it if needed.
-    __hsGetSelf_IMP <- wrapHsGetSelfIMP $ \self _sel -> do
+    __hsGetSelf_IMP <- wrapHsGetSelfIMP $ \self _sel outIsNew -> do
         withMVar classLock $ \_ -> do
             weakSelf <- getHsSelf self
             
             mbSelf <- if weakSelf /= nullStablePtr
                 then deRefStablePtr weakSelf >>= deRefWeak
                 else return Nothing
+            
+            let isNew = toObjCBool (isNothing mbSelf)
+            when (outIsNew /= nullPtr) (poke outIsNew isNew)
             
             case mbSelf of
                 Just hsSelf -> newStablePtr hsSelf
@@ -167,14 +174,23 @@ implementMemoryManagement cls = do
     
     return  ()
 
+importObject :: Ptr ObjCObject -> IO (HSO, Bool)
+importObject obj = alloca $ \p -> do
+    hso <- importObject' p obj
+    isNew <- peek p
+    return (hso, fromObjCBool isNew)
+
+importObject_ :: Ptr ObjCObject -> IO HSO
+importObject_ = importObject' nullPtr
+
 -- TODO: make sure finalizers are run within the scope of an autorelease pool
-importObject :: Ptr ObjCObject -> IO HSO
-importObject obj = do
+importObject' :: Ptr CSChar -> Ptr ObjCObject -> IO HSO
+importObject' outIsNew obj = do
     cls         <- object_getClass obj
     isHSObject  <- class_conformsToProtocol cls _HSObject_protocol
     
     sptr <- if isHSObject
-        then msgSend obj __hsGetSelf
+        then msgSend obj __hsGetSelf outIsNew
         else return nullStablePtr
     
     if sptr /= nullStablePtr
@@ -182,6 +198,7 @@ importObject obj = do
         else do
             retainObject obj
             fp <- newIdForeignPtr obj
+            when (outIsNew /= nullPtr) (poke outIsNew 1)
             return $! HSO fp []
 
 deRefAndFreeStablePtr :: StablePtr a -> IO a
@@ -209,10 +226,10 @@ type HsInit = IO (StablePtr [Dynamic])
 __hsInit :: SEL HsInit
 __hsInit = getSEL "__hsInit"
 
-type HsGetSelf = IO (StablePtr HSO)
+type HsGetSelf = Ptr CSChar -> IO (StablePtr HSO)
 
 __hsGetSelf :: SEL HsGetSelf
-__hsGetSelf = getSEL "__hsGetSelf"
+__hsGetSelf = getSEL "__hsGetSelf:"
 
 type Retain = IO (Ptr ObjCObject)
 

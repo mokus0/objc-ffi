@@ -16,7 +16,7 @@ import Control.Monad
 import Data.Dynamic
 import Data.Maybe
 import Foreign.C.Types
-import Foreign.Concurrent (newForeignPtr, addForeignPtrFinalizer)
+import Foreign.Concurrent
 import Foreign.ForeignPtr hiding (newForeignPtr, addForeignPtrFinalizer)
 import Foreign.Marshal.Alloc
 import Foreign.ObjC

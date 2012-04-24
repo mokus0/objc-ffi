@@ -2,7 +2,7 @@
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE ForeignFunctionInterface #-}
 module Foreign.ObjC.HSObject
-    ( HSO(..)
+    ( HSO, withHSO, hsoData, addHSOFinalizer
     , registerHSObjectClass
     , implementMemoryManagement
     , importObject
@@ -11,20 +11,54 @@ module Foreign.ObjC.HSObject
 
 import Control.Applicative
 import Control.Concurrent.MVar
+import Control.Exception
 import Control.Monad
 import Data.Dynamic
 import Data.Maybe
 import Foreign.C.Types
-import Foreign.Concurrent (newForeignPtr)
-import Foreign.ForeignPtr hiding (newForeignPtr)
+import Foreign.Concurrent (newForeignPtr, addForeignPtrFinalizer)
+import Foreign.ForeignPtr hiding (newForeignPtr, addForeignPtrFinalizer)
 import Foreign.Marshal.Alloc
 import Foreign.ObjC
 import Foreign.Ptr
 import Foreign.StablePtr
 import Foreign.Storable
+import System.IO
+import System.IO.Unsafe
 import System.Mem.Weak
 
 data HSO = HSO {-# UNPACK #-} !(ForeignPtr ObjCObject) ![Dynamic]
+
+instance Eq HSO where
+    HSO a _ == HSO b _  = (a == b)
+
+instance Show HSO where
+    showsPrec _ (HSO fp _) = 
+        showChar '<'
+        . showString cls
+        . showChar ' '
+        . shows fp
+        . showChar '>'
+        where cls = unsafePerformIO (withForeignPtr fp object_getClassName)
+
+-- TODO: this is probably overkill.  Trying to make sure the HSO stays
+-- alive throughout the whole call, in case something in the call is going
+-- to retain it.
+withHSO :: HSO -> (Ptr ObjCObject -> IO a) -> IO a
+withHSO hso action = 
+    bracket (newStablePtr hso) freeStablePtr
+    (const (withForeignPtr (fp hso) action))
+    where
+        {-# NOINLINE fp #-}
+        fp (HSO p _) = p
+
+{-# NOINLINE hsoData #-}
+hsoData :: HSO -> [Dynamic]
+hsoData (HSO _ ds) = ds
+
+{-# NOINLINE addHSOFinalizer #-}
+addHSOFinalizer :: HSO -> IO () -> IO ()
+addHSOFinalizer (HSO fp _) = addForeignPtrFinalizer fp
 
 -- TODO: check return codes
 registerHSObjectClass :: Class -> Maybe (IO Dynamic) -> IO ()
@@ -100,6 +134,11 @@ implementMemoryManagement cls = do
                 then deRefStablePtr weakSelf >>= deRefWeak
                 else return Nothing
             
+            when (weakSelf /= nullStablePtr && isNothing mbSelf) $ do
+                hPutStrLn stderr ("ERROR: HSObject " ++ show self
+                    ++ " is still alive, but its weak self-reference"
+                    ++ " has been collected")
+            
             let isNew = toObjCBool (isNothing mbSelf)
             when (outIsNew /= nullPtr) (poke outIsNew isNew)
             
@@ -107,19 +146,21 @@ implementMemoryManagement cls = do
                 Just hsSelf -> newStablePtr hsSelf
                 Nothing     -> do
                     msgSendSuper (ObjCSuper self super) retain
-                    fp <- newIdForeignPtr self
+                    !fp <- newIdForeignPtr self
                     
                     dsptr <- msgSend self __hsInit
-                    ds <- if dsptr /= nullStablePtr
+                    !ds <- if dsptr /= nullStablePtr
                         then deRefAndFreeStablePtr dsptr
                         else return []
                     
-                    let hso = HSO fp ds
-                    
-                    setHsSelf self =<< newStablePtr =<< mkWeakPtr hso Nothing
-                    
-                    hsSelf <- newStablePtr hso
+                    hsSelf <- newStablePtr (HSO fp ds)
                     setRetainedSelf self hsSelf
+                    
+                    setHsSelf self
+                        =<< newStablePtr 
+                        =<< flip mkWeakPtr Nothing
+                        =<< deRefStablePtr hsSelf
+                    
                     return hsSelf
     
     -- 'retain': if there is an "hsSelf", retain it
@@ -133,8 +174,15 @@ implementMemoryManagement cls = do
                 weakSelf <- getHsSelf self
                 when (weakSelf /= nullStablePtr) $ do
                     mbSelf <- deRefWeak =<< deRefStablePtr weakSelf
-                    whenJust mbSelf $ \hsSelf -> do
-                        setRetainedSelf self =<< newStablePtr hsSelf
+                    
+                    case mbSelf of
+                        Nothing -> hPutStrLn stderr
+                            ("ERROR: in -[HSObject retain]: Object " ++ show self
+                            ++ " is alive and inited, but its weak self-reference"
+                            ++ " has already been collected")
+                        Just hsSelf -> do
+                            sp <- newStablePtr hsSelf
+                            setRetainedSelf self sp
         
         return self
     
@@ -183,9 +231,10 @@ importObject obj = alloca $ \p -> do
 importObject_ :: Ptr ObjCObject -> IO HSO
 importObject_ = importObject' nullPtr
 
--- TODO: make sure finalizers are run within the scope of an autorelease pool
 importObject' :: Ptr CSChar -> Ptr ObjCObject -> IO HSO
 importObject' outIsNew obj = do
+    when (outIsNew /= nullPtr) (poke outIsNew 1)
+    
     cls         <- object_getClass obj
     isHSObject  <- class_conformsToProtocol cls _HSObject_protocol
     
@@ -198,7 +247,6 @@ importObject' outIsNew obj = do
         else do
             retainObject obj
             fp <- newIdForeignPtr obj
-            when (outIsNew /= nullPtr) (poke outIsNew 1)
             return $! HSO fp []
 
 deRefAndFreeStablePtr :: StablePtr a -> IO a

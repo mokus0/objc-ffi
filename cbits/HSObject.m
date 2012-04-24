@@ -45,7 +45,7 @@
 // data to the HSO returned rather than creating a new one.
 - (HsStablePtr) __hsInit;
 
-// __hsGetSelf :: IO (StablePtr HSO)
+// __hsGetSelf :: Ptr CSChar -> IO (StablePtr HSO)
 // 
 // This function should either return a cached HSO or create a new
 // one by calling __hsInit and creating a ForeignPtr to the object

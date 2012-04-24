@@ -2,7 +2,7 @@
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE ForeignFunctionInterface #-}
 module Foreign.ObjC.HSObject
-    ( HSO, withHSO, hsoData, addHSOFinalizer
+    ( HSO, nilHSO, withHSO, hsoData, addHSOFinalizer
     , registerHSObjectClass
     , implementMemoryManagement
     , importObject
@@ -27,10 +27,17 @@ import System.IO
 import System.IO.Unsafe
 import System.Mem.Weak
 
-data HSO = HSO {-# UNPACK #-} !(ForeignPtr ObjCObject) ![Dynamic]
+data HSO
+    = HSO {-# UNPACK #-} !(ForeignPtr ObjCObject) ![Dynamic]
+    | Nil
+
+nilHSO :: HSO
+nilHSO = Nil
 
 instance Eq HSO where
     HSO a _ == HSO b _  = (a == b)
+    Nil     == Nil      = True
+    _       == _        = False
 
 instance Show HSO where
     showsPrec _ (HSO fp _) = 
@@ -40,11 +47,13 @@ instance Show HSO where
         . shows fp
         . showChar '>'
         where cls = unsafePerformIO (withForeignPtr fp object_getClassName)
+    showsPrec _ Nil = showString "nil"
 
 -- TODO: this is probably overkill.  Trying to make sure the HSO stays
 -- alive throughout the whole call, in case something in the call is going
 -- to retain it.
 withHSO :: HSO -> (Ptr ObjCObject -> IO a) -> IO a
+withHSO Nil action = action nullPtr
 withHSO hso action = 
     bracket (newStablePtr hso) freeStablePtr
     (const (withForeignPtr (fp hso) action))
@@ -54,11 +63,13 @@ withHSO hso action =
 
 {-# NOINLINE hsoData #-}
 hsoData :: HSO -> [Dynamic]
+hsoData  Nil       = []
 hsoData (HSO _ ds) = ds
 
 {-# NOINLINE addHSOFinalizer #-}
 addHSOFinalizer :: HSO -> IO () -> IO ()
-addHSOFinalizer (HSO fp _) = addForeignPtrFinalizer fp
+addHSOFinalizer  Nil        = const (return ())
+addHSOFinalizer (HSO fp _)  = addForeignPtrFinalizer fp
 
 -- TODO: check return codes
 registerHSObjectClass :: Class -> Maybe (IO Dynamic) -> IO ()

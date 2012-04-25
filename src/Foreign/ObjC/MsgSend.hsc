@@ -2,19 +2,24 @@
 module Foreign.ObjC.MsgSend where
 
 import Foreign.LibFFI.Experimental
-import Foreign.Marshal
 import Foreign.ObjC.Exception
 import Foreign.ObjC.Types
 import Foreign.Ptr
 
 #ifdef GNUSTEP
+#error this code needs to be updated for GNUSTEP
 import System.IO.Unsafe
 #endif
 
 #include <ffi.h>
 
 msgSend      :: Dynamic a => Ptr ObjCObject -> SEL a -> a
+msgSend = msgSendWith outArg
 msgSendSuper :: Dynamic a => ObjCSuper -> SEL a -> a
+msgSendSuper = msgSendSuperWith (outByRef outArg)
+
+msgSendWith      :: Dynamic b => OutArg (Ptr ObjCObject) a -> a -> SEL b -> b
+msgSendSuperWith :: Dynamic b => OutArg (Ptr ObjCSuper)  a -> a -> SEL b -> b
 
 #ifdef GNUSTEP
 
@@ -97,7 +102,7 @@ cifIsFp2ret _ = False
 --       methods of ObjCRet and statically determining the correct
 --       one to use.
 
-msgSend obj sel = importDynWithCall (objc_ffi_call theCIF) dyn send obj sel
+msgSendWith objArg obj sel = importDynWithCall (objc_ffi_call theCIF) (objArg `consDyn` dyn) send obj sel
     where
         {-# NOINLINE theCIF #-}
         theCIF = cif
@@ -110,11 +115,8 @@ msgSend obj sel = importDynWithCall (objc_ffi_call theCIF) dyn send obj sel
                     then objc_msgSend_fp2ret
                     else objc_msgSend
 
-msgSendSuper super sel = importDynWithCall (objc_ffi_call  theCIF) (superArg `consDyn` dyn) send super sel
+msgSendSuperWith superArg super sel = importDynWithCall (objc_ffi_call  theCIF) (superArg `consDyn` dyn) send super sel
     where
-        superArg :: OutArg (Ptr ObjCSuper) ObjCSuper
-        superArg = outByRef (OutArg with)
-        
         {-# NOINLINE theCIF #-}
         theCIF = cif
         

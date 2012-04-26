@@ -14,12 +14,12 @@ import System.IO.Unsafe
 #include <ffi.h>
 
 msgSend      :: Dynamic a => Ptr ObjCObject -> SEL a -> a
-msgSend = msgSendWith outArg
+msgSend = msgSendWith outArg dyn
 msgSendSuper :: Dynamic a => ObjCSuper -> SEL a -> a
-msgSendSuper = msgSendSuperWith (outByRef outArg)
+msgSendSuper = msgSendSuperWith (outByRef outArg) dyn
 
-msgSendWith      :: Dynamic b => OutArg (Ptr ObjCObject) a -> a -> SEL b -> b
-msgSendSuperWith :: Dynamic b => OutArg (Ptr ObjCSuper)  a -> a -> SEL b -> b
+msgSendWith      :: SigType b => OutArg (Ptr ObjCObject) a -> Dyn b c -> a -> SEL b -> c
+msgSendSuperWith :: SigType b => OutArg (Ptr ObjCSuper)  a -> Dyn b c -> a -> SEL b -> c
 
 #ifdef GNUSTEP
 
@@ -102,10 +102,12 @@ cifIsFp2ret _ = False
 --       methods of ObjCRet and statically determining the correct
 --       one to use.
 
-msgSendWith objArg obj sel = importDynWithCall (objc_ffi_call theCIF) (objArg `consDyn` dyn) send obj sel
+msgSendWith objArg argsDyn obj sel = importDynWithCall (objc_ffi_call theCIF) fullDyn send obj sel
     where
         {-# NOINLINE theCIF #-}
         theCIF = cif
+        
+        fullDyn = objArg `consDyn` outArg `consDyn` argsDyn
         
         send = if cifIsStret theCIF
             then objc_msgSend_stret
@@ -115,10 +117,12 @@ msgSendWith objArg obj sel = importDynWithCall (objc_ffi_call theCIF) (objArg `c
                     then objc_msgSend_fp2ret
                     else objc_msgSend
 
-msgSendSuperWith superArg super sel = importDynWithCall (objc_ffi_call  theCIF) (superArg `consDyn` dyn) send super sel
+msgSendSuperWith superArg argsDyn super sel = importDynWithCall (objc_ffi_call  theCIF) fullDyn send super sel
     where
         {-# NOINLINE theCIF #-}
         theCIF = cif
+        
+        fullDyn = superArg `consDyn` outArg `consDyn` argsDyn
         
         {-# NOINLINE send#-}
         send = if cifIsStret theCIF
